@@ -1,16 +1,18 @@
+let image = ref (Image.create_surface 0 0)
+
 let window =
-  GMain.init ();
+  ignore(GMain.init ());
   let wnd = GWindow.window
     ~title:"Coding Experiment"
     ~position:`CENTER 
     ~resizable:false
     ~width:600 ~height:400 () in
-  wnd#connect#destroy GMain.quit;
+  ignore(wnd#connect#destroy GMain.quit);
   wnd
 
   
 (* MODULE DE CHARGEMENT ET DE SAUVEGARDE D'IMAGE *)
-module Aux = (* A FAIRE CORRECTEMENT *)
+module Aux =
   struct
     let load (text : GText.view) file =
       let ich = open_in file in
@@ -40,21 +42,50 @@ let confirm _ =
   dialog#destroy ();
   res
 
+let text_wnd =
+  ignore (GMain.init ());
+  let wnd = GWindow.window ~width:200 ~height:100 () in
+    ignore(wnd#connect#destroy GMain.quit);
+    wnd
+
+let img_wnd=
+  ignore (GMain.init ());
+  let wnd = GWindow.window ~width:400 ~height:300 () in
+    ignore(wnd#connect#destroy GMain.quit);
+    wnd
+
 let vbox = GPack.vbox
   ~spacing:10
   ~border_width:10
   ~packing:window#add ()
 
-let text =
+let vbox_img = GPack.vbox
+  ~packing:img_wnd#add ()
+
+let vbox_text = GPack.vbox
+  ~spacing:10
+  ~border_width:10
+  ~packing:text_wnd#add ()
+
+let textbox =
   let scroll = GBin.scrolled_window
     ~hpolicy:`ALWAYS
     ~vpolicy:`ALWAYS
     ~shadow_type:`ETCHED_IN
-    ~packing:vbox#add () in
+    ~packing:vbox_text#add () in
   let txt = GText.view ~packing:scroll#add () in
   txt#misc#modify_font_by_name "Monospace 10";
   txt
-  
+
+let showImg button () =
+  match button#filename with
+    | Some n ->
+	image := Image.load_image n;
+	ignore (GMisc.image
+	  ~file: n
+	  ~packing:vbox_img#add())
+    | None -> ()
+
 let topbbox = GPack.button_box `HORIZONTAL
   ~layout:`SPREAD
   ~packing:(vbox#pack ~expand:false) ()
@@ -69,7 +100,14 @@ let save_msg () = print_endline "Save the current file ?"
 
 let saveAs_func () = print_endline "Saving as..."
 
-let button_open stock event action =
+(* Open an image from a supported image file *)
+let button_open_img stock event action =
+  let button = GFile.chooser_button ~action:`OPEN ~packing:topbbox#add () in
+  ignore(button#connect#selection_changed (showImg button));
+  button
+
+(* Open a text from a text file *)
+let button_open_text stock event action =
   let dialog = GWindow.file_chooser_dialog
     ~action:`OPEN
     ~parent:window
@@ -78,13 +116,13 @@ let button_open stock event action =
   dialog#add_button_stock `CANCEL `CANCEL;
   dialog#add_select_button_stock stock event;
   let button = GButton.button ~stock ~packing:topbbox#add () in
-  GMisc.image ~stock ~packing:button#set_image ();
-  button#connect#clicked (fun () ->
+  ignore(GMisc.image ~stock ~packing:button#set_image ());
+  ignore(button#connect#clicked (fun () ->
     if dialog#run () = `OPEN then Gaux.may action dialog#filename;
-    dialog#misc#hide ());
+    dialog#misc#hide ()));
   button
   
-let button_save_as stock event action =
+let button_save_text stock event action =
   let dialog = GWindow.file_chooser_dialog
     ~action:`SAVE
     ~parent:window
@@ -93,15 +131,24 @@ let button_save_as stock event action =
   dialog#add_button_stock `CANCEL `CANCEL;
   dialog#add_select_button_stock stock event;
   let button = GButton.button ~stock ~packing:topbbox#add () in
-  GMisc.image ~stock ~packing:button#set_image ();
-  button#connect#clicked (fun () ->
+  ignore(GMisc.image ~stock ~packing:button#set_image ());
+  ignore(button#connect#clicked (fun () ->
     if dialog#run () = `SAVE_AS then Gaux.may action dialog#filename;
-    dialog#misc#hide ());
+    dialog#misc#hide ()));
   button
-  
-let open_button = button_open `OPEN `OPEN (Aux.load text)
-let save_as_button = button_save_as `SAVE_AS `SAVE_AS (Aux.save text)
-   
+
+let open_text_button = button_open_text `OPEN `OPEN (Aux.load textbox)
+
+let open_img_button =
+  let button = GButton.button
+		  ~label: "Open text"
+		  ~packing: topbbox#add ()
+	in ignore (button#connect#clicked (fun () ->
+	  text_wnd#show ()));
+	  GMain.main ();
+      button
+
+let save_text_button = button_save_text `SAVE_AS `SAVE_AS (Aux.save textbox)
 
 let botbbox = GPack.button_box `HORIZONTAL
   ~layout:`EDGE
@@ -122,25 +169,25 @@ let button_about =
     ~parent:window
     ~destroy_with_parent:true () in
   let button = GButton.button ~stock:`ABOUT ~packing:botbbox#add () in
-  GMisc.image ~stock:`ABOUT ~packing:button#set_image ();
-  button#connect#clicked (fun () -> ignore (dialog#run ()); dialog#misc#hide ());
+  ignore(GMisc.image ~stock:`ABOUT ~packing:button#set_image ());
+  ignore(button#connect#clicked (fun () -> ignore (dialog#run ()); ignore(dialog#misc#hide ())));
   button
   
 let button_help =
   let button = GButton.button
     ~stock:`HELP
     ~packing:botbbox#add () in
-  button#connect#clicked ~callback:help_func;
+  ignore(button#connect#clicked ~callback:help_func);
   button
   
 let button_quit =
   let button = GButton.button
     ~stock:`QUIT
     ~packing:botbbox#add () in
-  button#connect#clicked ~callback:GMain.quit;
+  ignore(button#connect#clicked ~callback:GMain.quit);
   button
   
 let _ =
-  window#event#connect#delete confirm;
+  ignore(window#event#connect#delete confirm);
   window#show ();
   GMain.main ()
