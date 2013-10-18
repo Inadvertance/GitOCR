@@ -13,7 +13,8 @@ let sdl_init () =
   end
 
 (* Load an image *)
-let load_image = Sdlloader.load_image
+let load = Sdlloader.load_image
+let save = Sdlvideo.save_BMP
 
 (* Usual function to create a surface with SDL *)
 let create_surface w h = Sdlvideo.create_RGB_surface [`SWSURFACE]
@@ -25,25 +26,44 @@ let create_surface w h = Sdlvideo.create_RGB_surface [`SWSURFACE]
   ~bmask:Int32.zero
   ~amask:Int32.zero
 
-(* Obtain a display surface to draw it afterwards *)
-let disp_surf w h = Sdlvideo.set_video_mode w h [`DOUBLEBUF]
 
-(* attendre une touche ... *)
-let rec wait_key () =
-  let e = Sdlevent.wait_event () in
-    match e with
-    Sdlevent.KEYDOWN _ -> ()
-      | _ -> wait_key ()
+let surface_of_matrix mat =
+  let (w, h) = Matrix.get_dims mat in
+    let surf = create_surface w h in
+      for j = 0 to (h - 1) do
+        for i = 0 to (w - 1) do
+          Sdlvideo.put_pixel_color surf i j mat.(i).(j);
+        done;
+      done;
+      surf
+
+
+(* Main display function useful for both of the next functions *)
+let disp w h = Sdlvideo.set_video_mode w h [`DOUBLEBUF]
+
+(* Same that the previous function, for a matrix *)
+let disp_mat src =
+  let (w, h) = Matrix.get_dims src in
+    disp w h
+
+let disp_surf src =
+  let (w, h) = get_dims src in
+    disp w h
  
 (*
   show img dst
-  affiche la surface img sur la surface de destination dst (normalement l'écran)
+  affiche la surface img 
+  sur la surface de destination dst (normalement l'Ã©cran)
 *)
 let show src dst =
   let d = Sdlvideo.display_format src in
     Sdlvideo.blit_surface d dst ();
     Sdlvideo.flip dst
 
+let show_mat mat dst =
+  show (surface_of_matrix mat) dst
+
+(* Code du TP *)
 (*
 (* main *)
 let main () =
@@ -54,9 +74,9 @@ let main () =
     (* Initialisation de SDL *)
     sdl_init ();
     let img = Sdlloader.load_image Sys.argv.(1) in
-    (* On récupère les dimensions *)
+    (* On rÃ©cupÃ¨re les dimensions *)
     let (w,h) = get_dims img in
-    (* On crée la surface d'affichage en doublebuffering *)
+    (* On crÃ©e la surface d'affichage en doublebuffering *)
     let display = Sdlvideo.set_video_mode w h [`DOUBLEBUF] in
       (* on affiche l'image *)
       show img display;
@@ -65,4 +85,4 @@ let main () =
       (* on quitte *)
       exit 0
   end
- *)
+*)
