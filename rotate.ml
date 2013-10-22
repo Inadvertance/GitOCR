@@ -28,7 +28,7 @@ let getNewHeight angle matrix =
 			+. float_of_int (w) *. sin(deg2rad angle)
 		)
 
-(* Obtain the X coordinate of the rotated image's center *)
+(* h the X coordinate of the rotated image's center *)
 let getNewCenterX angle matrix = ((getNewWidth angle matrix) / 2) - 1
 
 (* Obtain the Y coordinate of the rotated image's center *)
@@ -38,13 +38,10 @@ let getNewCenterY angle matrix = ((getNewHeight angle matrix) / 2) - 1
 let getX angle matrix i j =
 	let (centerX, centerY) = getCenter matrix in
 		let newCenterX = getNewCenterX angle matrix and
-			  newCenterY = getNewCenterX angle matrix in
-				int_of_float
-				(
-					sin(deg2rad angle) *. float_of_int (j - newCenterY)
-		  		+. cos(deg2rad angle) *. float_of_int (i - newCenterX)
-		  		+. float_of_int (centerX)
-				)
+			  newCenterY = getNewCenterY angle matrix in
+			  	int_of_float (cos(deg2rad angle) *. float_of_int (i - newCenterX))
+				- int_of_float (sin(deg2rad angle) *. float_of_int (j - newCenterY))
+		  	+ centerX
 
 (* Get the Y coordinate of a pixel BEFORE rotation *)
 let getY angle matrix i j =
@@ -57,16 +54,16 @@ let getY angle matrix i j =
 
 let rotate angle matrix =
 	let (newW, newH) = (getNewWidth angle matrix, getNewHeight angle matrix) and
-			(w, h) = Matrix.get_dims matrix in
+		(w, h) = Matrix.get_dims matrix in
 		let newMatrix = Matrix.make newW newH (0, 0, 0) in
 			for j = 0 to newH - 1 do
 				for i = 0 to newW - 1 do
-					let x = (getX angle newMatrix i j) and
-							y = (getY angle newMatrix i j) in
+					let x = (getX angle matrix i j) and
+							y = (getY angle matrix i j) in
 						if (0 <= x && x < w && 0 <= y && y < h)  then
 							newMatrix.(i).(j) <- matrix.(x).(y)
-						else
-							newMatrix.(i).(j) <- (255, 255, 255)
 				done
 			done;
 			newMatrix
+
+let rotPos90 matrix = rotate (90.) matrix

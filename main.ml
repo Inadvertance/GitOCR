@@ -7,7 +7,7 @@ let window =
     ~title:"Coding Experiment"
     ~position:`CENTER 
     ~resizable:false
-    ~width:1600 ~height:900 () in
+    ~width:1800 ~height:1000 () in
   ignore(wnd#connect#destroy GMain.quit);
   wnd
 
@@ -100,17 +100,18 @@ let textbox =
   txt
 
 let img = GMisc.image
+    ~stock: `OPEN
     ~width: 800
     ~height: 600
   ~packing: hbox_img#add ()
 
-let clear () = img#clear (); image := (Image.create_surface 0 0)
+let saveImg () = Image.save !matrix
 
-let button_clear =
+let button_saveImg =
   let button = GButton.button
-    ~label: "Clear the image box"
+    ~label: "Save image"
     ~packing: toptoolbar#add () in
-        ignore(button#connect#clicked ~callback:(clear));
+        ignore(button#connect#clicked ~callback:(saveImg));
     button
 
 let showImg button () =
@@ -118,8 +119,9 @@ let showImg button () =
     | Some i ->
       image := Image.load i;
       lock ();
-      img#set_file i
-    | None -> clear ()
+      img#set_file i;
+      matrix := Functions.img2mat !image;
+    | None -> ()
 
 let button_open =
   let button = GFile.chooser_button
@@ -129,19 +131,55 @@ let button_open =
               ignore (button#connect#selection_changed (showImg button));
      button
 
+(* Preprocess without median filter *)
 let preprocess () =
-  matrix := Functions.img2mat !image;
-  Functions.image2grey !image !matrix;
-  Functions.binarize !matrix;
-  Functions.medianFilter !matrix;
-  matrix := Rotate.rotate 90. !matrix;
+  matrix := Functions.binarize (Functions.image2grey !image !matrix);
+  show !matrix
+
+let rotPos90 () =
+  matrix := Rotate.rotPos90 !matrix;
+  show !matrix
+
+let rotate () =
+  let angle = (Angle.hough !matrix) in
+    matrix := Rotate.rotate angle !matrix;
+  (*
+  let angle = Angle.getAngle !matrix in
+    matrix := Rotate.rotate angle !matrix;
+  *)
+  show !matrix
+
+(* Preprocess with median filter *)
+let medianFilter () =
+  matrix := Functions.medianFilter !matrix;
   show !matrix
 
 let button_preprocess =
   let button = GButton.button
-    ~label:"Prepocessing"
+    ~label:"Preprocessing"
     ~packing:toptoolbar#add () in
       ignore(button#connect#clicked ~callback:(preprocess));
+    button
+
+let button_rotPos90 =
+  let button = GButton.button
+    ~label:"+90"
+    ~packing:toptoolbar#add () in
+      ignore(button#connect#clicked ~callback:(rotPos90));
+    button
+
+let button_rotate =
+  let button = GButton.button
+    ~label:"Rotate"
+    ~packing:toptoolbar#add () in
+      ignore(button#connect#clicked ~callback:(rotate));
+    button
+
+let button_medianFilter =
+  let button = GButton.button
+    ~label:"Filter"
+    ~packing:toptoolbar#add () in
+      ignore(button#connect#clicked ~callback:(medianFilter));
     button
 
 let button_about =
@@ -153,11 +191,11 @@ let button_about =
       Benoit GARNIER
        Andrea GUEUGNAUT"]
     ~copyright:"This project may be useful for learning and understanding
-    how to make a simple OCR with OCaml programming language. \n
+    of how to make a simple OCR with OCaml programming language. \n
     You are allowed to use this project
      for learning and understanding purposes."
     ~license:"Project released under Public License"
-    ~version:"Alpha 1.0"
+    ~version:"Soutenance 1.0"
     ~website:"http://2fat2fly4real.hostei.com"
     ~website_label:"Coding Experiment"
     ~position:`CENTER_ON_PARENT
@@ -172,7 +210,14 @@ let button_about =
 let button_help = GButton.button
     ~stock:`HELP
     ~packing:toolbar#add ()
-  
+
+let button_detect =
+  let button = GButton.button
+    ~label:"Detect text"
+    ~packing:toolbar#add () in
+      ignore(button#connect#clicked ~callback:(detect));
+    button
+
 let button_quit =
   let button = GButton.button
     ~stock:`QUIT

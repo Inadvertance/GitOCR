@@ -12,10 +12,6 @@ let sdl_init () =
     Sdlevent.enable_events Sdlevent.all_events_mask;
   end
 
-(* Load an image *)
-let load = Sdlloader.load_image
-let save = Sdlvideo.save_BMP
-
 (* Usual function to create a surface with SDL *)
 let create_surface w h = Sdlvideo.create_RGB_surface [`SWSURFACE]
   ~w:w
@@ -26,17 +22,15 @@ let create_surface w h = Sdlvideo.create_RGB_surface [`SWSURFACE]
   ~bmask:Int32.zero
   ~amask:Int32.zero
 
-
 let surface_of_matrix mat =
   let (w, h) = Matrix.get_dims mat in
     let surf = create_surface w h in
-      for j = 0 to (h - 1) do
-        for i = 0 to (w - 1) do
+      for j = 0 to h - 1 do
+        for i = 0 to w - 1 do
           Sdlvideo.put_pixel_color surf i j mat.(i).(j);
-        done;
+        done
       done;
       surf
-
 
 (* Main display function useful for both of the next functions *)
 let disp w h = Sdlvideo.set_video_mode w h [`DOUBLEBUF]
@@ -62,6 +56,14 @@ let show src dst =
 
 let show_mat mat dst =
   show (surface_of_matrix mat) dst
+
+(* Load an image *)
+let load = Sdlloader.load_image
+(* Save an image *)
+let save matrix =
+  let image = (surface_of_matrix matrix) in
+    Sdlvideo.unlock image;
+    Sdlvideo.save_BMP image "result.bmp"
 
 (* Code du TP *)
 (*

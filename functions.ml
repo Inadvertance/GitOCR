@@ -40,7 +40,8 @@ let image2grey img mat =
       for i = 0 to w - 1 do
         mat.(i).(j) <- color2grey (Sdlvideo.get_pixel_color img i j)
       done
-    done
+    done;
+    mat
 
 (* Get the average threshold of the image *)
 let getThreshold mat =
@@ -65,24 +66,35 @@ let binarize mat =
         else
           mat.(i).(j) <- (255, 255, 255) (* WHITE *)
         done
-      done
-
-let getPixelRadius mat x y =
-  let value = ref 0 in
-    for j = y - 1 to y + 1 do
-      for i = x - 1 to x + 1 do
-        value := !value + int_of_float ( greyLevel2 (mat.(i).(j)) )
-      done
-    done;
-    !value
+      done;
+      mat
 
 let color_of_int c = (c, c, c)
 
-(* From the second line and column to the penultimate line and column *)
+let compare a b = if (a = b) then 0 else if (a > b) then 1 else -1
+
+let getMedianValue mat i j =
+  let auxArray = Array.make 9 (0) in
+    begin
+      auxArray.(0) <- int_of_float ( greyLevel2 (mat.(i-1).(j-1)) );
+      auxArray.(1) <- int_of_float ( greyLevel2 (mat.(i).(j-1)) );
+      auxArray.(2) <- int_of_float ( greyLevel2 (mat.(i+1).(j-1)) );
+      auxArray.(3) <- int_of_float ( greyLevel2 (mat.(i).(j-1)) );
+      auxArray.(4) <- int_of_float ( greyLevel2 (mat.(i).(j)) );
+      auxArray.(5) <- int_of_float ( greyLevel2 (mat.(i).(j+1)) );
+      auxArray.(6) <- int_of_float ( greyLevel2 (mat.(i+1).(j-1)) );
+      auxArray.(7) <- int_of_float ( greyLevel2 (mat.(i).(j)) );
+      auxArray.(8) <- int_of_float ( greyLevel2 (mat.(i).(j+1)) );
+      Array.fast_sort compare auxArray;
+    end;
+    color_of_int (auxArray.(4))
+
 let medianFilter mat =
   let (w, h) = Matrix.get_dims mat in
+  let newMat = Matrix.make w h (0,0,0) in
     for j = 1 to h - 2 do
       for i = 1 to w - 2 do
-        mat.(i).(j) <- color_of_int ((getPixelRadius mat i j) / 9)
+        newMat.(i).(j) <- (getMedianValue mat i j);
       done
-    done
+    done;
+    newMat
